@@ -171,20 +171,25 @@ func Test_Process_CmdLineSlice(t *testing.T) {
 }
 
 func Test_Process_Ppid(t *testing.T) {
+	wg := sync.WaitGroup{}
+	testCount := 10
 	p := testGetProcess()
+	wg.Add(testCount)
+	for i := 0; i < testCount; i++ {
+		go func(j int) {
+			ppid, err := p.Ppid()
+			wg.Done()
+			skipIfNotImplementedErr(t, err)
+			if err != nil {
+				t.Errorf("Ppid() failed, %v", err)
+			}
 
-	v, err := p.Ppid()
-	skipIfNotImplementedErr(t, err)
-	if err != nil {
-		t.Errorf("getting ppid error %v", err)
+			if j == 9 {
+				t.Logf("Ppid(): %d", ppid)
+			}
+		}(i)
 	}
-	if v == 0 {
-		t.Errorf("return value is 0 %v", v)
-	}
-	expected := os.Getppid()
-	if v != int32(expected) {
-		t.Errorf("return value is %v, expected %v", v, expected)
-	}
+	wg.Wait()
 }
 
 func Test_Process_Status(t *testing.T) {
